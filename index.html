@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Activité IA — Générateur de Documents</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0e17;
+    --paper: #faf8f2;
+    --accent: #e85d26;
+    --gold: #f2b134;
+    --teal: #2a9d8f;
+    --soft: #f0ebe0;
+    --border: #d6cfc0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.65;
+    font-size: 16px;
+  }
+
+  /* ─── HERO ─── */
+  .hero {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 64px 40px 56px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: .15;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; left: 120px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: var(--gold);
+    opacity: .12;
+  }
+  .hero-inner { max-width: 860px; margin: 0 auto; position: relative; z-index: 1; }
+  .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 2px;
+    margin-bottom: 22px;
+  }
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    line-height: 1.1;
+    margin-bottom: 18px;
+  }
+  .hero h1 span { color: var(--gold); }
+  .hero-sub {
+    font-size: 1.05rem;
+    font-weight: 300;
+    color: #c8c2b5;
+    max-width: 580px;
+  }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 24px;
+    margin-top: 36px;
+    padding-top: 28px;
+    border-top: 1px solid rgba(255,255,255,.12);
+  }
+  .meta-item { display: flex; align-items: center; gap: 8px; }
+  .meta-icon { font-size: 1.2rem; }
+  .meta-label { font-size: .8rem; color: #948e82; text-transform: uppercase; letter-spacing: .08em; display: block; }
+  .meta-val { font-family: 'Syne', sans-serif; font-weight: 600; font-size: .95rem; }
+
+  /* ─── LAYOUT ─── */
+  .page { max-width: 860px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* ─── SECTION TITLES ─── */
+  .section {
+    margin-top: 56px;
+    animation: fadeUp .6s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .section:nth-child(2) { animation-delay: .1s; }
+  .section:nth-child(3) { animation-delay: .2s; }
+  .section:nth-child(4) { animation-delay: .3s; }
+  .section:nth-child(5) { animation-delay: .4s; }
+
+  .section-label {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 20px;
+  }
+  .section-num {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: .85rem;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: -.01em;
+  }
+
+  /* ─── CARDS ─── */
+  .card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 30px;
+    margin-bottom: 16px;
+  }
+  .card-accent { border-left: 4px solid var(--accent); }
+  .card-teal   { border-left: 4px solid var(--teal); }
+  .card-gold   { border-left: 4px solid var(--gold); }
+
+  /* ─── CONTEXT ─── */
+  .context-text {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: #3a3630;
+  }
+  .context-text strong { color: var(--ink); font-weight: 500; }
+
+  /* ─── OBJECTIFS GRID ─── */
+  .obj-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .obj-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 18px;
+    display: flex; gap: 12px;
+    align-items: flex-start;
+  }
+  .obj-icon { font-size: 1.5rem; flex-shrink: 0; line-height: 1; }
+  .obj-text { font-size: .9rem; line-height: 1.5; color: #3a3630; }
+  .obj-text strong { display: block; font-family: 'Syne', sans-serif; font-weight: 600; margin-bottom: 3px; color: var(--ink); }
+
+  /* ─── ÉTAPES ─── */
+  .etape {
+    display: flex; gap: 20px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 14px;
+    position: relative;
+    transition: box-shadow .2s, border-color .2s;
+  }
+  .etape:hover { box-shadow: 0 6px 24px rgba(0,0,0,.07); border-color: #b8b0a0; }
+  .etape-num {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 2.2rem;
+    color: var(--border);
+    line-height: 1;
+    flex-shrink: 0;
+    width: 44px;
+    text-align: right;
+  }
+  .etape-body {}
+  .etape-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .etape-emoji { font-size: 1.1rem; }
+  .etape-desc { font-size: .9rem; color: #4a4540; line-height: 1.65; }
+  .etape-tag {
+    display: inline-block;
+    background: var(--soft);
+    border: 1px solid var(--border);
+    font-size: .75rem;
+    padding: 2px 9px;
+    border-radius: 20px;
+    margin-top: 8px;
+    font-weight: 500;
+    color: #5a5248;
+  }
+
+  /* ─── LIVRABLES ─── */
+  .livrable-list { list-style: none; }
+  .livrable-list li {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--soft);
+    font-size: .95rem;
+  }
+  .livrable-list li:last-child { border-bottom: none; }
+  .check {
+    width: 22px; height: 22px;
+    border: 2px solid var(--teal);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    color: var(--teal);
+    font-size: .75rem;
+    font-weight: 700;
+  }
+
+  /* ─── CRITÈRES ─── */
+  .critere-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .critere-card {
+    background: var(--soft);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .critere-score {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.8rem;
+    color: var(--accent);
+    display: block;
+  }
+  .critere-label { font-size: .82rem; color: #5a5248; margin-top: 2px; line-height: 1.4; }
+
+  /* ─── ASTUCE ─── */
+  .tip-box {
+    background: linear-gradient(135deg, #0f0e17, #1e1c2e);
+    color: var(--paper);
+    border-radius: 12px;
+    padding: 28px 30px;
+    display: flex; gap: 20px;
+    align-items: flex-start;
+  }
+  .tip-icon { font-size: 2rem; flex-shrink: 0; }
+  .tip-title { font-family: 'Syne', sans-serif; font-weight: 700; color: var(--gold); margin-bottom: 8px; }
+  .tip-text { font-size: .92rem; color: #c8c2b5; line-height: 1.7; }
+  .tip-text a { color: var(--gold); text-decoration: none; }
+
+  /* ─── BONUS CHALLENGE ─── */
+  .bonus {
+    background: var(--soft);
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+  }
+  .bonus-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .bonus ul { padding-left: 18px; }
+  .bonus ul li { font-size: .9rem; margin-bottom: 6px; color: #4a4540; }
+
+  /* ─── FOOTER ─── */
+  footer {
+    background: var(--ink);
+    color: #948e82;
+    text-align: center;
+    padding: 24px;
+    font-size: .8rem;
+    letter-spacing: .04em;
+  }
+  footer strong { color: var(--paper); font-family: 'Syne', sans-serif; }
+
+  /* ─── PRINT ─── */
+  @media print {
+    .hero { background: #111 !important; -webkit-print-color-adjust: exact; }
+    .section { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-inner">
+    <div class="badge">🤖 Activité Formation — IA Générative</div>
+    <h1>Créer un <span>Générateur<br>de Documents</span> avec l'IA</h1>
+    <p class="hero-sub">Attestations, diplômes, certificats… à partir d'un simple fichier Excel. Une activité concrète, utile et 100 % réalisable avec l'IA de votre choix.</p>
+    <div class="meta-row">
+      <div class="meta-item">
+        <span class="meta-icon">⏱</span>
+        <div>
+          <span class="meta-label">Durée</span>
+          <span class="meta-val">2 h 30 à 3 h</span>
+        </div>
+      </div>
+      <div class="meta-item">
+        <span class="meta-icon">👥</span>
+        <div>
+          <span class="meta-label">Groupes</span>
+          <span class="meta-val">2 à 3 personnes</span>
+        </div>
+      </div>
+      <div class="meta-item">
+        <span class="meta-icon">🎯</span>
+        <div>
+          <span class="meta-label">Niveau</span>
+          <span class="meta-val">Débutant à intermédiaire</span>
+        </div>
+      </div>
+      <div class="meta-item">
+        <span class="meta-icon">🛠</span>
+        <div>
+          <span class="meta-label">Outils</span>
+          <span class="meta-val">IA au choix + Python ou App web</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+
+  <!-- CONTEXTE -->
+  <section class="section">
+    <div class="section-label">
+      <div class="section-num">→</div>
+      <h2 class="section-title">Contexte &amp; Défi</h2>
+    </div>
+    <div class="card card-accent">
+      <p class="context-text">
+        Chaque année, des dizaines d'<strong>attestations de formation, de diplômes ou de certificats</strong> doivent être générés manuellement — un travail répétitif, chronophage et source d'erreurs. 
+        <br><br>
+        Votre mission : concevoir, <em>avec l'aide d'une IA générative</em>, une <strong>petite application locale</strong> qui lit un fichier Excel contenant les données des participants (nom, prénom, formation, date…) et génère automatiquement <strong>un document personnalisé</strong> (PDF ou Word) pour chacun d'eux.
+        <br><br>
+        Vous n'avez pas besoin d'être développeur. L'IA est là pour vous guider, écrire le code, corriger les erreurs et vous expliquer chaque étape. <strong>Votre rôle : poser les bonnes questions et piloter le projet.</strong>
+      </p>
+    </div>
+  </section>
+
+  <!-- OBJECTIFS -->
+  <section class="section">
+    <div class="section-label">
+      <div class="section-num">01</div>
+      <h2 class="section-title">Objectifs pédagogiques</h2>
+    </div>
+    <div class="obj-grid">
+      <div class="obj-card">
+        <span class="obj-icon">💬</span>
+        <div class="obj-text">
+          <strong>Prompter efficacement</strong>
+          Formuler des demandes claires et itératives à une IA générative
+        </div>
+      </div>
+      <div class="obj-card">
+        <span class="obj-icon">🔁</span>
+        <div class="obj-text">
+          <strong>Travailler en boucle</strong>
+          Tester, corriger, améliorer — le cycle réel du développement assisté
+        </div>
+      </div>
+      <div class="obj-card">
+        <span class="obj-icon">📂</span>
+        <div class="obj-text">
+          <strong>Lire un fichier Excel</strong>
+          Comprendre comment exploiter des données structurées dans un programme
+        </div>
+      </div>
+      <div class="obj-card">
+        <span class="obj-icon">📄</span>
+        <div class="obj-text">
+          <strong>Générer des documents</strong>
+          Produire des fichiers PDF ou Word personnalisés automatiquement
+        </div>
+      </div>
+      <div class="obj-card">
+        <span class="obj-icon">🚀</span>
+        <div class="obj-text">
+          <strong>Créer de la valeur</strong>
+          Concevoir un outil qui répond à un vrai besoin professionnel
+        </div>
+      </div>
+      <div class="obj-card">
+        <span class="obj-icon">🤝</span>
+        <div class="obj-text">
+          <strong>Collaborer</strong>
+          Répartir les rôles et combiner les idées au sein du groupe
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ÉTAPES -->
+  <section class="section">
+    <div class="section-label">
+      <div class="section-num">02</div>
+      <h2 class="section-title">Déroulement de l'activité</h2>
+    </div>
+
+    <div class="etape">
+      <div class="etape-num">1</div>
+      <div class="etape-body">
+        <div class="etape-title"><span class="etape-emoji">🎨</span> Choisir votre document &amp; préparer les données</div>
+        <div class="etape-desc">
+          Décidez ensemble du type de document à générer : <strong>attestation de formation, diplôme, certificat de participation</strong>… Listez les champs nécessaires (nom, prénom, date, intitulé de formation, signature…) et créez votre <strong>fichier Excel</strong> exemple avec 5 à 10 lignes fictives.
+        </div>
+        <span class="etape-tag">⏱ ~20 min</span>
+      </div>
+    </div>
+
+    <div class="etape">
+      <div class="etape-num">2</div>
+      <div class="etape-body">
+        <div class="etape-title"><span class="etape-emoji">🤖</span> Premier échange avec l'IA</div>
+        <div class="etape-desc">
+          Ouvrez l'IA de votre choix (ChatGPT, Claude, Gemini…) et demandez-lui de vous aider à créer un programme capable de <strong>lire votre Excel et de générer un document</strong>. Commencez simplement, sans tout détailler d'un coup. Notez le code proposé et essayez de le comprendre avec l'aide de l'IA.
+        </div>
+        <span class="etape-tag">⏱ ~30 min</span>
+      </div>
+    </div>
+
+    <div class="etape">
+      <div class="etape-num">3</div>
+      <div class="etape-body">
+        <div class="etape-title"><span class="etape-emoji">🧪</span> Tester &amp; déboguer en équipe</div>
+        <div class="etape-desc">
+          Exécutez le code sur vos machines. Il y aura probablement des erreurs — c'est <strong>normal et formateur</strong> ! Copiez le message d'erreur et renvoyez-le à l'IA pour qu'elle vous aide à corriger. Recommencez jusqu'à ce que les documents se génèrent correctement.
+        </div>
+        <span class="etape-tag">⏱ ~40 min</span>
+      </div>
+    </div>
+
+    <div class="etape">
+      <div class="etape-num">4</div>
+      <div class="etape-body">
+        <div class="etape-title"><span class="etape-emoji">✨</span> Améliorer le rendu visuel</div>
+        <div class="etape-desc">
+          Les documents fonctionnent ? Passez au niveau suivant : demandez à l'IA d'améliorer la <strong>mise en page</strong> (logo fictif, couleurs, cadre, signature…). Ajoutez un titre élégant, une bordure, un texte de félicitations. Votre document doit ressembler à un vrai certificat !
+        </div>
+        <span class="etape-tag">⏱ ~30 min</span>
+      </div>
+    </div>
+
+    <div class="etape">
+      <div class="etape-num">5</div>
+      <div class="etape-body">
+        <div class="etape-title"><span class="etape-emoji">🖥</span> (Optionnel) Créer une petite interface</div>
+        <div class="etape-desc">
+          En bonus, demandez à l'IA de créer une <strong>interface graphique simple</strong> (en Python avec Tkinter, ou une mini page web) permettant de glisser-déposer le fichier Excel et de cliquer sur un bouton pour lancer la génération. L'outil devient ainsi utilisable par n'importe qui.
+        </div>
+        <span class="etape-tag">⏱ ~30 min</span>
+      </div>
+    </div>
+
+    <div class="etape">
+      <div class="etape-num">6</div>
+      <div class="etape-body">
+        <div class="etape-title"><span class="etape-emoji">🎤</span> Présentation des résultats</div>
+        <div class="etape-desc">
+          Chaque groupe présente son outil en <strong>2 à 3 minutes</strong> : montrez une démo en direct, expliquez votre approche, partagez un prompt qui a particulièrement bien fonctionné (ou un qui a échoué !). Discutez ensemble de ce que vous feriez différemment.
+        </div>
+        <span class="etape-tag">⏱ ~20 min</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIVRABLES -->
+  <section class="section">
+    <div class="section-label">
+      <div class="section-num">03</div>
+      <h2 class="section-title">Ce que vous devez rendre</h2>
+    </div>
+    <div class="card card-teal">
+      <ul class="livrable-list">
+        <li><span class="check">✓</span> Le fichier Excel exemple utilisé comme source de données</li>
+        <li><span class="check">✓</span> Le code complet de l'application (script Python ou autre)</li>
+        <li><span class="check">✓</span> 3 exemples de documents générés (PDF ou Word)</li>
+        <li><span class="check">✓</span> Un journal de bord : les prompts clés utilisés et ce qu'ils ont produit</li>
+        <li><span class="check">✓</span> Une capture du moment le plus satisfaisant (ou du bug le plus drôle 😄)</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- CRITÈRES D'ÉVALUATION -->
+  <section class="section">
+    <div class="section-label">
+      <div class="section-num">04</div>
+      <h2 class="section-title">Critères d'évaluation</h2>
+    </div>
+    <div class="critere-grid">
+      <div class="critere-card">
+        <span class="critere-score">20 %</span>
+        <span class="critere-label">Le programme lit le fichier Excel sans erreur</span>
+      </div>
+      <div class="critere-card">
+        <span class="critere-score">25 %</span>
+        <span class="critere-label">Les documents sont générés et correctement personnalisés</span>
+      </div>
+      <div class="critere-card">
+        <span class="critere-score">20 %</span>
+        <span class="critere-label">Qualité visuelle du document produit</span>
+      </div>
+      <div class="critere-card">
+        <span class="critere-score">20 %</span>
+        <span class="critere-label">Qualité &amp; pertinence des prompts utilisés</span>
+      </div>
+      <div class="critere-card">
+        <span class="critere-score">15 %</span>
+        <span class="critere-label">Clarté de la présentation &amp; esprit d'équipe</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ASTUCE IA -->
+  <section class="section">
+    <div class="tip-box">
+      <div class="tip-icon">💡</div>
+      <div>
+        <div class="tip-title">Conseils pour bien travailler avec l'IA</div>
+        <p class="tip-text">
+          <strong>Soyez précis</strong> : donnez à l'IA le contexte complet (langage souhaité, structure du fichier Excel, type de document…).<br><br>
+          <strong>Itérez</strong> : ne cherchez pas le prompt parfait du premier coup. Commencez simple, puis affinez.<br><br>
+          <strong>Copiez les erreurs</strong> : quand quelque chose ne marche pas, copiez-collez le message d'erreur exact dans l'IA — elle saura quoi faire.<br><br>
+          <strong>Demandez des explications</strong> : dites à l'IA "explique-moi ce que fait ce code ligne par ligne" — vous apprendrez beaucoup plus vite.<br><br>
+          <strong>IA suggérées</strong> : ChatGPT (chat.openai.com), Claude (claude.ai), Gemini (gemini.google.com), Mistral (chat.mistral.ai)
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- BONUS -->
+  <section class="section">
+    <div class="bonus">
+      <div class="bonus-title">🏆 Défis Bonus — Pour aller plus loin</div>
+      <ul>
+        <li>Ajouter un <strong>QR code</strong> sur chaque document renvoyant vers une page de vérification</li>
+        <li>Générer automatiquement un <strong>fichier ZIP</strong> contenant tous les documents</li>
+        <li>Envoyer les documents par <strong>e-mail</strong> à chaque participant via un script</li>
+        <li>Permettre à l'utilisateur de <strong>choisir le modèle de document</strong> (parmi plusieurs templates)</li>
+        <li>Ajouter une <strong>numérotation unique</strong> et une date de génération sur chaque certificat</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <strong>Activité Formation IA</strong> — Générateur de Documents Automatisé &nbsp;|&nbsp; Imprimez ou partagez cette page comme fiche de consignes
+</footer>
+
+</body>
+</html>
